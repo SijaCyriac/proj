@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Professor Feedback</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin: 20px 0;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #comments-section {
+            margin: 20px 0;
+            width: 100%;
+            max-width: 600px;
+        }
+        #comments-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #comments-section th, #comments-section td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        #comments-section th {
+            background-color: #007bff;
+            color: #fff;
+        }
+        #average-label {
+            font-weight: bold;
+            color: #007bff;
+            margin-top: 20px;
+        }
+        .stars {
+            display: inline-block;
+            font-size: 24px;
+            color: #ffd700;
+        }
+        .stars .empty {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select a Professor:</h1>
+    <form id="professor-form">
+        <select id="professor-select" name="professor">
+            {% for professor in professors %}
+            <option value="{{ professor }}">{{ professor }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" onclick="getComments()">Get Comments</button>
+    </form>
+    <h2>Comments</h2>
+    <div id="comments-section"></div>
+    <h3>Average Label: <span id="average-label"></span></h3>
+
+    <script>
+        function getComments() {
+            const professor = document.getElementById('professor-select').value;
+            fetch('/get_comments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ professor: professor })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const commentsSection = document.getElementById('comments-section');
+                commentsSection.innerHTML = '<table><tr><th>Comment</th><th>Label</th></tr></table>';
+                const table = commentsSection.querySelector('table');
+                data.comments.forEach(comment => {
+                    const row = document.createElement('tr');
+                    const commentCell = document.createElement('td');
+                    const labelCell = document.createElement('td');
+                    commentCell.innerText = comment.cleaned_comment;
+                    labelCell.innerText = comment.label;
+                    row.appendChild(commentCell);
+                    row.appendChild(labelCell);
+                    table.appendChild(row);
+                });
+                updateAverageLabel(data.average_label);
+            });
+        }
+
+        function updateAverageLabel(label) {
+            const averageLabelElement = document.getElementById('average-label');
+            averageLabelElement.innerHTML = `${label} ${getStars(label)}`;
+        }
+
+        function getStars(label) {
+            const starCount = {
+                "Excellent": 5,
+                "Good": 4,
+                "Neutral": 3,
+                "Bad": 2,
+                "Very Bad": 1
+            }[label] || 0;
+
+            let stars = '';
+            for (let i = 0; i < 5; i++) {
+                stars += i < starCount ? '<span class="stars">★</span>' : '<span class="stars empty">☆</span>';
+            }
+            return stars;
+        }
+    </script>
+</body>
+</html>
